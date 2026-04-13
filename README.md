@@ -4,44 +4,104 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-An opinionated YAML-driven analytics dashboarding library. Connect to PostgreSQL, CSV, Excel, or Parquet -- get a beautiful dashboard from a single config file. Built by [Mindcase](https://mindcase.co).
+**Instant dashboards from Claude Code. One prompt. Under a minute. Done.**
+
+Point Claude at your data -- PostgreSQL, CSV, Excel, Parquet -- and get a production-ready analytics dashboard. No frontend code. No setup. No cleanup needed.
 
 ```bash
 pip install mindcase-lens
+claude mcp add lens -- uvx mindcase-lens-mcp
+```
+
+Then tell Claude:
+
+> "Build me a dashboard from my database at postgresql://localhost:5432/mydb"
+
+That's it. Claude introspects your schema, generates the config, and serves a full dashboard with KPIs, charts, tables, filters, and theming.
+
+## See It in Action
+
+```
+You: "I have a folder of CSV files in ./data/ — build me a dashboard"
+
+Claude: Introspecting ./data/...
+        Found 3 tables: sales (10K rows), customers (500 rows), products (200 rows)
+        Generating dashboard config...
+        Dashboard running at http://localhost:8080
+```
+
+Under a minute. Every time.
+
+## What You Get
+
+- **KPIs** with trend indicators and % change
+- **Charts** -- bar, line, area, pie, donut, horizontal bar (with pagination for dense data)
+- **Data tables** -- sortable, paginated, conditional formatting, CSV export
+- **Filters** -- dropdowns (single/multi with search), date range, text, number range, toggle
+- **Theming** -- light/dark mode, color themes, fonts, corner radius. All live-preview.
+- **Sidebar navigation** -- auto-generated, with logo support
+
+## Any Data Source
+
+| Source | Just point to it |
+|--------|-----------------|
+| **PostgreSQL** | `postgresql://user:pass@host:5432/db` |
+| **CSV / TSV** | `data.csv` or `./folder/` |
+| **Excel** | `report.xlsx` |
+| **Parquet** | `data.parquet` |
+| **Mix them** | A list of any of the above |
+
+```yaml
+# One file
+connection: "sales.csv"
+
+# A whole folder — each file becomes a table
+connection: "./data/"
+
+# Multiple sources together
+connection:
+  - "sales.csv"
+  - "customers.xlsx"
+  - "postgresql://localhost:5432/mydb"
 ```
 
 ## Why Lens?
 
 | | Lens | Grafana | Metabase | Streamlit |
 |---|---|---|---|---|
-| **Config format** | YAML | UI + JSON | UI | Python code |
-| **Frontend code needed** | None | None | None | Yes |
-| **Setup time** | Seconds | Minutes | Minutes | Hours |
-| **AI-native** | Yes (MCP) | No | No | No |
-| **CSV/Excel support** | Built-in | Plugin | Upload | Code |
-| **Self-contained** | Single `pip install` | Docker/binary | Docker/JAR | pip + code |
+| **Time to dashboard** | < 1 minute | 10+ minutes | 10+ minutes | Hours |
+| **Works with Claude** | Native MCP | No | No | No |
+| **Frontend code** | None | None | None | Yes |
+| **CSV/Excel** | Built-in | Plugin | Upload | Code |
+| **Setup** | `pip install` | Docker | Docker/JAR | pip + code |
 
-Lens is for developers who want instant dashboards without building frontend code. Write a YAML config (or let Claude write it for you), point it at your data, done.
+Lens exists because every other dashboarding tool requires you to either build a frontend, learn a UI, or write code. With Lens, you describe what you want to Claude, and it's done.
 
-## Quick Start
+## For Power Users
 
-**1. Create a YAML config:**
+Everything Claude generates is a YAML config file. You can edit it directly:
 
 ```yaml
 app:
   title: "Sales Dashboard"
   database:
-    connection: "sales.csv"  # or postgresql://, .xlsx, .parquet, or a folder
+    connection: "postgresql://localhost:5432/mydb"
   pages:
-    - id: overview
-      name: Overview
+    - id: sales
+      name: Sales
       icon: bar-chart
+      filters:
+        - id: region
+          type: dropdown
+          label: Region
+          query: "SELECT DISTINCT region FROM sales"
+          all: true
       rows:
         - height: small
           items:
             - type: kpi
-              title: Total Revenue
-              query: "SELECT SUM(amount) as current_value FROM sales"
+              title: Revenue
+              query: "SELECT SUM(amount) as current_value FROM sales WHERE (:region = 'ALL' OR region = :region)"
               prefix: "$"
               compact: true
         - height: medium
@@ -52,137 +112,16 @@ app:
               query: "SELECT month, SUM(amount) as revenue FROM sales GROUP BY month"
               x: month
               y: revenue
+              y_format: currency
 ```
 
-**2. Serve it:**
-
-```bash
-lens serve dashboard.yaml
-```
-
-That's it. Full React dashboard with KPIs, charts, tables, filters, and theming.
-
-## Supported Data Sources
-
-| Source | Connection Format |
-|--------|------------------|
-| **PostgreSQL** | `postgresql://user:pass@host:5432/db` |
-| **CSV / TSV** | `data.csv` or `./folder/` |
-| **Excel** | `report.xlsx` |
-| **Parquet** | `data.parquet` |
-| **Multiple sources** | List of any of the above |
-
-```yaml
-# Single file
-connection: "sales.csv"
-
-# Folder (each file becomes a table)
-connection: "./data/"
-
-# Multiple sources
-connection:
-  - "sales.csv"
-  - "customers.xlsx"
-```
-
-File-based sources use DuckDB under the hood. PostgreSQL uses asyncpg with connection pooling.
-
-## Use with Claude (MCP)
-
-Install the [Lens MCP server](https://github.com/mindcase-co/lens-mcp) and let Claude build dashboards for you:
-
-```bash
-pip install mindcase-lens
-claude mcp add lens -- uvx mindcase-lens-mcp
-```
-
-Then tell Claude:
-
-> "Connect to my database at postgresql://localhost:5432/mydb and build me a dashboard"
-
-Claude will introspect your schema, generate the YAML, and serve the dashboard -- no manual config needed.
-
-## Features
-
-- **KPIs** -- single metric cards with trend indicators (% change), formatting, and compact numbers
-- **Charts** -- bar, line, area, pie, donut, horizontal bar, combo via ApexCharts. Paginated for dense data.
-- **Data Tables** -- pagination, sorting, conditional formatting, CSV export
-- **Filters** -- dropdown (single/multi with search), date range (presets + calendar), date, text, number range, toggle
-- **Theming** -- light/dark mode, 4 color themes, 5 fonts, adjustable corner radius. Live preview.
-- **Sidebar** -- auto-generated navigation with collapsible sub-pages, logo support (light/dark variants)
-- **Hot Reload** -- edit YAML, dashboard updates instantly (debug mode)
-- **Multi-source** -- PostgreSQL, CSV, Excel, Parquet, folders, or any combination
-- **Security** -- read-only database connections, parameterized SQL, no raw queries on the client
-
-## Architecture
-
-```
-YAML Config → Pydantic Validation → FastAPI Server → React SPA
-                                          ↕
-                              PostgreSQL (asyncpg) or DuckDB
-                              (CSV / Excel / Parquet)
-```
-
-The frontend is a pre-built React 19 app using shadcn/ui and ApexCharts. It loads the config from the API and renders everything dynamically. No client-side routing, no build step for users.
-
-## Widget Types
-
-### KPI
-```yaml
-- type: kpi
-  title: Total Revenue
-  query: "SELECT SUM(amount) as current_value, SUM(prev_amount) as previous_value FROM sales"
-  prefix: "$"
-  compact: true
-  decimals: 0
-```
-
-### Chart
-```yaml
-- type: chart
-  chart_type: bar    # bar | line | area | pie | donut | horizontal_bar | combo
-  title: Revenue by Month
-  query: "SELECT month, SUM(amount) as revenue FROM sales GROUP BY month"
-  x: month
-  y: revenue
-  y_format: currency  # currency | number | percentage | compact
-```
-
-### Table
-```yaml
-- type: table
-  title: Recent Orders
-  query: "SELECT id, customer, amount, date FROM orders ORDER BY date DESC"
-  page_size: 25
-  default_sort:
-    column: date
-    direction: desc
-  columns:
-    - id: amount
-      label: Amount
-      format: currency
-      conditional:
-        rule: threshold
-        threshold: 1000
-```
-
-## Filter Types
-
-| Type | Config | SQL Params |
-|------|--------|------------|
-| `dropdown` | `query` or `options`, `multi`, `all` | `:filter_id` |
-| `daterange` | `presets`, `min_date`, `max_date` | `:filter_id_start`, `:filter_id_end` |
-| `date` | -- | `:filter_id` |
-| `text` | `placeholder` | `:filter_id` |
-| `number_range` | `min`, `max`, `step` | `:filter_id_min`, `:filter_id_max` |
-| `toggle` | `on_label`, `off_label` | `:filter_id` |
+Full YAML reference: [llms-full.txt](llms-full.txt)
 
 ## CLI
 
 ```bash
 lens serve dashboard.yaml              # start dashboard
 lens serve dashboard.yaml --port 3000  # custom port
-lens serve dashboard.yaml --no-browser # don't open browser
 lens validate dashboard.yaml           # validate config
 ```
 
@@ -195,33 +134,17 @@ app = Lens("dashboard.yaml")
 app.serve(port=8080)
 ```
 
-## Development
-
-```bash
-pip install -e .
-cd frontend && npm install
-
-# Frontend dev (hot reload)
-cd frontend && npm run dev
-
-# Build
-make build
-
-# Run
-lens serve examples/northwind_dashboard.yaml
-```
-
-## Also Available
-
-- **[Lens MCP Server](https://github.com/mindcase-co/lens-mcp)** -- build dashboards from Claude using natural language (`pip install mindcase-lens-mcp`)
-
 ## Privacy & Security
 
 - All database connections are **read-only** by default
 - SQL queries are parameterized -- no injection risk
-- Raw SQL never reaches the browser -- queries are replaced with opaque IDs
+- Raw SQL never reaches the browser
 - No telemetry, no external calls, no data leaves your machine
+
+## Also Available
+
+- **[Lens MCP Server](https://github.com/mindcase-co/lens-mcp)** -- the Claude integration (`pip install mindcase-lens-mcp`)
 
 ## License
 
-MIT
+MIT -- Built by [Mindcase](https://mindcase.co)

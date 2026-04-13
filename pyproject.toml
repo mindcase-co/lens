@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mindcase-lens"
 version = "0.2.0"
-description = "An opinionated YAML-driven analytics dashboarding library. Connect to PostgreSQL, CSV, Excel, or Parquet — get a beautiful dashboard from a single config file."
+description = "Instant dashboards from Claude Code. Connect to PostgreSQL, CSV, Excel, or Parquet — get a production-ready analytics dashboard in under a minute."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
