@@ -68,15 +68,15 @@ export function AppSidebar({ config, pages, activePageId, activeTab, onPageChang
           {!collapsed && <span className="truncate text-[13px] font-medium">{page.name}</span>}
         </button>
         {hasTabs && !collapsed && (
-          <div className="ml-[1.45rem] pl-3 border-l-[1.5px] border-border/40 space-y-px mt-0.5 mb-1.5">
+          <div className="ml-6 mt-0.5 mb-1.5 border-l-2 border-border/30 rounded-sm">
             {page.tabs!.map(tab => {
               const isActive = active && activeTab === tab.name;
               return (
                 <button key={tab.name} onClick={() => { if (!active) onPageChange(page.id); onTabChange(tab.name); }}
-                  className={`flex items-center w-full px-2.5 py-1.5 rounded-md text-[12px] transition-all duration-200 ${
+                  className={`flex items-center w-full pl-4 pr-3 py-1.5 text-[12px] transition-all duration-200 ${
                     isActive
                       ? "text-foreground font-medium"
-                      : "text-muted-foreground/50 hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}>
                   <span className="truncate">{tab.name}</span>
                 </button>

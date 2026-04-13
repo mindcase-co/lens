@@ -992,6 +992,7 @@ app:
           AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
           AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
           AND (:ov_discontinued = true OR p.discontinued = 0)
+          AND (:ov_shipper = 'ALL' OR s.company_name = ANY(string_to_array(:ov_shipper, ',')))
           GROUP BY s.company_name ORDER BY count DESC
         x: shipper
         y: count
