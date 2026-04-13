@@ -1,0 +1,208 @@
+# Lens — Full Reference for AI Agents
+
+> YAML-driven analytics dashboarding library. pip install mindcase-lens
+
+## What Lens Does
+
+Lens takes a YAML config file and serves a full analytics dashboard as a React SPA backed by FastAPI. Users define database queries, filters, and layout in YAML -- Lens handles the frontend, theming, and interactivity.
+
+## Supported Data Sources
+
+- PostgreSQL: connection: "postgresql://user:pass@host:5432/db"
+- CSV/TSV: connection: "data.csv" or connection: "./folder/"
+- Excel: connection: "report.xlsx"
+- Parquet: connection: "data.parquet"
+- Multiple: connection as a list of any of the above
+
+## YAML Config Schema
+
+```yaml
+app:
+  title: string                    # Dashboard title
+  theme: light | dark | system     # Default: system
+  port: integer                    # Default: 8080
+  debug: boolean                   # Enables hot reload. Default: false
+  database:
+    connection: string | list      # Data source (see above)
+    pool_size: integer             # Default: 10
+    query_timeout: integer         # Default: 30 seconds
+  sidebar:
+    logo: string                   # Path to logo image
+    logo_dark: string              # Logo for dark mode
+    title: string
+    sections:
+      - label: string
+        pages: [page_id, ...]
+    footer: string
+  pages:
+    - id: string                   # Unique page identifier
+      name: string                 # Display name
+      icon: string                 # Icon name (bar-chart, users, package, etc.)
+      default: boolean             # Is this the default page?
+      description: string
+      filters: [FilterConfig]      # Page-level filters
+      tabs:                        # Optional sub-pages
+        - name: string
+          default: boolean
+          filters: [FilterConfig]  # Tab-level filters
+          rows: [RowConfig]
+      rows: [RowConfig]            # For pages without tabs
+```
+
+## Widget Types
+
+### KPI
+```yaml
+type: kpi
+title: string
+query: string          # Must return current_value, optionally previous_value
+prefix: string         # e.g. "$"
+suffix: string         # e.g. "%"
+decimals: integer
+compact: boolean       # e.g. 1500000 → "1.5M"
+```
+
+### Chart
+```yaml
+type: chart
+chart_type: bar | line | area | pie | donut | horizontal_bar | combo
+title: string
+query: string          # Must return columns matching x and y
+x: string              # Column name for x-axis
+y: string | list       # Column name(s) for y-axis
+y_format: currency | number | percentage | compact
+stacked: boolean
+data_labels: boolean
+legend: top | bottom | right | hidden
+sort: value_asc | value_desc | none
+limit: integer         # Show top N, group rest as "Other"
+colors: [string]       # Custom hex colors
+reference_line:
+  value: number
+  label: string
+series:                # For combo charts only
+  - column: string
+    as: bar | line
+    axis: left | right
+```
+
+### Table
+```yaml
+type: table
+title: string
+query: string
+page_size: integer     # Default: 25
+default_sort:
+  column: string
+  direction: asc | desc
+columns:
+  - id: string
+    label: string
+    format: currency | number | date | text | percentage
+    hidden: boolean
+    conditional:
+      rule: positive_negative | threshold
+      threshold: number
+```
+
+## Filter Types
+
+### Dropdown (single or multi-select)
+```yaml
+id: string             # Used as SQL param name (:id)
+type: dropdown
+label: string
+query: string          # SQL to populate options dynamically
+options: [string]      # Or static options list
+multi: boolean         # Enable multi-select with chips
+all: boolean           # Add "All" option
+default: string
+depends_on: string     # Another filter ID for cascading
+```
+
+### Date Range
+```yaml
+type: daterange
+label: string
+presets: [7d, 30d, 90d, MTD, QTD, YTD, custom]
+min_date: string
+max_date: string
+# SQL params: :id_start, :id_end
+```
+
+### Date
+```yaml
+type: date
+label: string
+# SQL param: :id
+```
+
+### Text Search
+```yaml
+type: text
+label: string
+placeholder: string
+# SQL param: :id
+```
+
+### Number Range
+```yaml
+type: number_range
+label: string
+min: number
+max: number
+step: number
+# SQL params: :id_min, :id_max
+```
+
+### Toggle
+```yaml
+type: toggle
+label: string
+on_label: string
+off_label: string
+on_value: string | number | boolean
+off_value: string | number | boolean
+# SQL param: :id
+```
+
+## Row Layout
+```yaml
+rows:
+  - height: small | medium | large | auto
+    title: string
+    collapsible: boolean
+    items: [Widget, Widget, ...]   # Widgets split equally across the row
+```
+
+## SQL Parameter Convention
+
+Filters map to SQL named parameters by convention:
+- dropdown id:"region" → WHERE (:region = 'ALL' OR region = :region)
+- daterange id:"period" → WHERE date >= :period_start AND date <= :period_end
+- number_range id:"price" → WHERE price BETWEEN :price_min AND :price_max
+- text id:"search" → WHERE name ILIKE '%' || :search || '%'
+- toggle id:"active" → WHERE (:active = true OR status = 'active')
+
+## CLI Commands
+
+- lens serve config.yaml [--port N] [--no-browser]
+- lens validate config.yaml
+
+## Python API
+
+```python
+from lens import Lens
+app = Lens("config.yaml")
+app.serve(port=8080, open_browser=True)
+```
+
+## MCP Server
+
+For Claude Code integration:
+```bash
+pip install mindcase-lens-mcp
+claude mcp add lens -- uvx mindcase-lens-mcp
+```
+
+MCP tools: introspect_database, sample_data, generate_dashboard, validate_config, serve_dashboard, add_page, add_filter

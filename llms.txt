@@ -1,0 +1,24 @@
+# Lens
+
+> An opinionated YAML-driven analytics dashboarding library by Mindcase.
+
+Lens lets you create beautiful analytics dashboards from a single YAML config file. Connect to PostgreSQL, CSV, Excel, or Parquet files -- no frontend code needed.
+
+## Install
+
+pip install mindcase-lens
+
+## Usage
+
+lens serve dashboard.yaml
+
+## MCP Server
+
+For AI/Claude integration: pip install mindcase-lens-mcp
+
+## Links
+
+- Docs: https://github.com/mindcase-co/lens
+- PyPI: https://pypi.org/project/mindcase-lens/
+- MCP: https://pypi.org/project/mindcase-lens-mcp/
+- Full reference: /llms-full.txt

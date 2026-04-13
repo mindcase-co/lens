@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mindcase-lens"
 version = "0.2.0"
-description = "An opinionated YAML-driven analytics dashboarding library. Define a config, get a beautiful dashboard."
+description = "An opinionated YAML-driven analytics dashboarding library. Connect to PostgreSQL, CSV, Excel, or Parquet — get a beautiful dashboard from a single config file."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -28,10 +28,18 @@ keywords = [
     "sql-dashboard",
     "analytics-dashboard",
     "data-dashboard",
+    "csv-dashboard",
+    "duckdb",
+    "claude",
+    "ai-dashboard",
+    "llm",
+    "no-code-dashboard",
+    "mcp",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Framework :: FastAPI",
+    "Framework :: AsyncIO",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -41,7 +49,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Database :: Front-Ends",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 dependencies = [
     "fastapi>=0.110.0",
@@ -64,6 +74,7 @@ Homepage = "https://mindcase.co"
 Documentation = "https://github.com/mindcase-co/lens"
 Repository = "https://github.com/mindcase-co/lens"
 Issues = "https://github.com/mindcase-co/lens/issues"
+Changelog = "https://github.com/mindcase-co/lens/releases"
 
 [tool.hatch.build.targets.wheel]
 packages = ["lens"]
