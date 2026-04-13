@@ -7,20 +7,20 @@ export function DropdownFilter({ config, value, options, loading, onChange }: {
   onChange: (v: string) => void;
 }) {
   if (loading) return (
-    <div className="flex items-center gap-2">
-      <span className="text-[11px] text-muted-foreground/40">{config.label}</span>
-      <Skeleton className="h-8 w-28 rounded-md" />
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{config.label}</span>
+      <Skeleton className="h-9 w-[140px] rounded-md" />
     </div>
   );
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[11px] text-muted-foreground/40 shrink-0">{config.label}</span>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
       <Select value={value ?? ""} onValueChange={(v) => { if (v) onChange(v); }}>
-        <SelectTrigger className="h-8 min-w-[100px] text-[13px] font-medium bg-accent/40 border-0 rounded-md hover:bg-accent/70 transition-colors gap-1 px-2.5">
+        <SelectTrigger className="min-w-[140px] h-9 text-sm">
           <SelectValue placeholder={config.placeholder ?? "Select..."} />
         </SelectTrigger>
-        <SelectContent align="start">
+        <SelectContent>
           {config.all && <SelectItem value="ALL">All</SelectItem>}
           {(options as string[]).map(opt => <SelectItem key={String(opt)} value={String(opt)}>{String(opt)}</SelectItem>)}
         </SelectContent>

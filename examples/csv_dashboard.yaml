@@ -1,0 +1,78 @@
+app:
+  title: "CSV Dashboard"
+  theme: system
+  port: 8081
+  debug: true
+  database:
+    connection: "examples/csv_test/"
+  sidebar:
+    title: "CSV Demo"
+    sections:
+      - label: "Data"
+        pages: ["sales", "customers"]
+  pages:
+    - id: sales
+      name: Sales
+      icon: bar-chart
+      default: true
+      filters:
+        - id: region
+          type: dropdown
+          label: Region
+          query: "SELECT DISTINCT region FROM sales ORDER BY region"
+          all: true
+          default: ALL
+      rows:
+        - height: small
+          items:
+            - type: kpi
+              title: Total Revenue
+              query: "SELECT SUM(amount) as current_value FROM sales WHERE (:region = 'ALL' OR region = :region)"
+              prefix: "$"
+              compact: true
+            - type: kpi
+              title: Total Orders
+              query: "SELECT COUNT(*) as current_value FROM sales WHERE (:region = 'ALL' OR region = :region)"
+            - type: kpi
+              title: Avg Order
+              query: "SELECT ROUND(AVG(amount), 2) as current_value FROM sales WHERE (:region = 'ALL' OR region = :region)"
+              prefix: "$"
+        - height: medium
+          items:
+            - type: chart
+              chart_type: bar
+              title: Revenue by Region
+              query: "SELECT region, SUM(amount)::int as revenue FROM sales GROUP BY region ORDER BY revenue DESC"
+              x: region
+              y: revenue
+              y_format: currency
+            - type: chart
+              chart_type: pie
+              title: Revenue by Product
+              query: "SELECT product, SUM(amount)::int as revenue FROM sales GROUP BY product ORDER BY revenue DESC"
+              x: product
+              y: revenue
+        - height: large
+          items:
+            - type: table
+              title: All Sales
+              query: "SELECT * FROM sales ORDER BY date DESC"
+              page_size: 10
+    - id: customers
+      name: Customers
+      icon: users
+      rows:
+        - height: small
+          items:
+            - type: kpi
+              title: Total Customers
+              query: "SELECT COUNT(*) as current_value FROM customers"
+            - type: kpi
+              title: Active
+              query: "SELECT COUNT(*) as current_value FROM customers WHERE status = 'Active'"
+        - height: large
+          items:
+            - type: table
+              title: Customer List
+              query: "SELECT * FROM customers ORDER BY name"
+              page_size: 10

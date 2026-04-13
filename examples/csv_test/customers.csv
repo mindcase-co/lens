@@ -1,0 +1,6 @@
+id,name,email,region,status,joined
+1,Alice Corp,alice@example.com,North,Active,2023-01-15
+2,Bob Industries,bob@example.com,South,Active,2023-03-20
+3,Charlie Ltd,charlie@example.com,East,Inactive,2023-06-01
+4,Delta Inc,delta@example.com,West,Active,2023-08-10
+5,Echo Systems,echo@example.com,North,Active,2023-11-05

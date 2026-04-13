@@ -39,7 +39,7 @@ def resolve_env_vars(value: Any) -> Any:
 # --- Pydantic Models ---
 
 class DatabaseConfig(BaseModel):
-    connection: str
+    connection: str | list[str]
     pool_size: int = 10
     query_timeout: int = 30
 

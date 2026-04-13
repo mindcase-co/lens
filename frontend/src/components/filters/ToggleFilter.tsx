@@ -6,11 +6,11 @@ export function ToggleFilter({ config, value, onChange }: {
 }) {
   const isOn = value === true || value === config.on_value;
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[11px] text-muted-foreground/40 shrink-0">{config.label}</span>
-      <div className="h-8 px-2.5 flex items-center gap-2 bg-accent/40 rounded-md">
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
+      <div className="flex items-center gap-2 h-9">
         <Switch checked={isOn} onCheckedChange={onChange} />
-        <span className="text-[12px] font-medium text-muted-foreground">{isOn ? (config.on_label ?? "On") : (config.off_label ?? "Off")}</span>
+        <span className="text-sm text-muted-foreground">{isOn ? (config.on_label ?? "On") : (config.off_label ?? "Off")}</span>
       </div>
     </div>
   );
