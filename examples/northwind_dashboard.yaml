@@ -1,0 +1,1067 @@
+app:
+  title: Northwind Analytics
+  theme: light
+  port: 8080
+  date_format: MMM DD, YYYY
+  currency: USD
+  timezone: America/New_York
+  debug: true
+  database:
+    connection: postgresql://postgres:lensos@localhost:5432/lensos
+    pool_size: 10
+    query_timeout: 30
+  sidebar:
+    logo: /logo-dark.png
+    logo_dark: /logo-light.png
+    title: Northwind Analytics
+    sections:
+    - label: Sales
+      pages:
+      - sales
+    - label: Catalog
+      pages:
+      - products
+      - customers
+    - label: Dev
+      pages:
+      - overview
+    - label: Operations
+      pages:
+      - employees
+      - shipping
+    footer: Powered by Mindcase
+  pages:
+  - id: sales
+    name: Sales
+    icon: bar-chart
+    default: true
+    description: Revenue, orders, and sales performance
+    filters:
+    - id: country
+      type: dropdown
+      label: Country
+      query: SELECT DISTINCT ship_country FROM orders ORDER BY ship_country
+      all: true
+      default: ALL
+    - id: category
+      type: dropdown
+      label: Category
+      query: SELECT DISTINCT category_name FROM categories ORDER BY category_name
+      all: true
+      default: ALL
+    tabs:
+    - name: Overview
+      default: true
+      rows:
+      - height: small
+        items:
+        - type: kpi
+          title: Total Revenue
+          query: 'SELECT SUM(od.unit_price * od.quantity * (1 - od.discount))::numeric
+            as current_value FROM order_details od JOIN orders o ON od.order_id =
+            o.order_id JOIN products p ON od.product_id = p.product_id JOIN categories
+            c ON p.category_id = c.category_id WHERE (:country = ''ALL'' OR o.ship_country
+            = :country) AND (:category = ''ALL'' OR c.category_name = :category)
+
+            '
+          prefix: $
+          compact: true
+          decimals: 0
+        - type: kpi
+          title: Total Orders
+          query: 'SELECT COUNT(DISTINCT o.order_id) as current_value FROM orders o
+            JOIN order_details od ON o.order_id = od.order_id JOIN products p ON od.product_id
+            = p.product_id JOIN categories c ON p.category_id = c.category_id WHERE
+            (:country = ''ALL'' OR o.ship_country = :country) AND (:category = ''ALL''
+            OR c.category_name = :category)
+
+            '
+          compact: true
+        - type: kpi
+          title: Avg Order Value
+          query: "SELECT AVG(order_total)::numeric as current_value FROM (\n  SELECT\
+            \ o.order_id, SUM(od.unit_price * od.quantity * (1 - od.discount)) as\
+            \ order_total\n  FROM orders o\n  JOIN order_details od ON o.order_id\
+            \ = od.order_id\n  JOIN products p ON od.product_id = p.product_id\n \
+            \ JOIN categories c ON p.category_id = c.category_id\n  WHERE (:country\
+            \ = 'ALL' OR o.ship_country = :country)\n  AND (:category = 'ALL' OR c.category_name\
+            \ = :category)\n  GROUP BY o.order_id\n) sub\n"
+          prefix: $
+          decimals: 2
+        - type: kpi
+          title: Unique Customers
+          query: 'SELECT COUNT(DISTINCT o.customer_id) as current_value FROM orders
+            o JOIN order_details od ON o.order_id = od.order_id JOIN products p ON
+            od.product_id = p.product_id JOIN categories c ON p.category_id = c.category_id
+            WHERE (:country = ''ALL'' OR o.ship_country = :country) AND (:category
+            = ''ALL'' OR c.category_name = :category)
+
+            '
+      - title: Revenue Trends
+        height: medium
+        items:
+        - type: chart
+          chart_type: bar
+          title: Revenue by Month
+          query: "SELECT\n  TO_CHAR(o.order_date, 'Mon YY') as month,\n  SUM(od.unit_price\
+            \ * od.quantity * (1 - od.discount))::int as revenue\nFROM order_details\
+            \ od JOIN orders o ON od.order_id = o.order_id JOIN products p ON od.product_id\
+            \ = p.product_id JOIN categories c ON p.category_id = c.category_id WHERE\
+            \ (:country = 'ALL' OR o.ship_country = :country) AND (:category = 'ALL'\
+            \ OR c.category_name = :category) GROUP BY TO_CHAR(o.order_date, 'Mon\
+            \ YY'), DATE_TRUNC('month', o.order_date) ORDER BY DATE_TRUNC('month',\
+            \ o.order_date)\n"
+          x: month
+          y: revenue
+          y_format: currency
+        - type: chart
+          chart_type: line
+          title: Orders per Month
+          query: "SELECT\n  TO_CHAR(o.order_date, 'Mon YY') as month,\n  COUNT(DISTINCT\
+            \ o.order_id) as orders\nFROM orders o JOIN order_details od ON o.order_id\
+            \ = od.order_id JOIN products p ON od.product_id = p.product_id JOIN categories\
+            \ c ON p.category_id = c.category_id WHERE (:country = 'ALL' OR o.ship_country\
+            \ = :country) AND (:category = 'ALL' OR c.category_name = :category) GROUP\
+            \ BY TO_CHAR(o.order_date, 'Mon YY'), DATE_TRUNC('month', o.order_date)\
+            \ ORDER BY DATE_TRUNC('month', o.order_date)\n"
+          x: month
+          y: orders
+          y_format: compact
+      - height: medium
+        items:
+        - type: chart
+          chart_type: pie
+          title: Revenue by Country (Top 10)
+          query: "SELECT ship_country as country, SUM(od.unit_price * od.quantity\
+            \ * (1 - od.discount))::int as revenue FROM order_details od JOIN orders\
+            \ o ON od.order_id = o.order_id WHERE (:category = 'ALL' OR EXISTS (\n\
+            \  SELECT 1 FROM products p JOIN categories c ON p.category_id = c.category_id\n\
+            \  WHERE p.product_id = od.product_id AND c.category_name = :category\n\
+            )) GROUP BY ship_country ORDER BY revenue DESC LIMIT 10\n"
+          x: country
+          y: revenue
+        - type: chart
+          chart_type: donut
+          title: Revenue by Category
+          query: 'SELECT c.category_name as category, SUM(od.unit_price * od.quantity
+            * (1 - od.discount))::int as revenue FROM order_details od JOIN products
+            p ON od.product_id = p.product_id JOIN categories c ON p.category_id =
+            c.category_id JOIN orders o ON od.order_id = o.order_id WHERE (:country
+            = ''ALL'' OR o.ship_country = :country) GROUP BY c.category_name ORDER
+            BY revenue DESC
+
+            '
+          x: category
+          y: revenue
+      - height: large
+        items:
+        - type: table
+          title: Recent Orders
+          query: "SELECT\n  o.order_id,\n  cu.company_name as customer,\n  o.ship_country\
+            \ as country,\n  SUM(od.unit_price * od.quantity * (1 - od.discount))::numeric(10,2)\
+            \ as total,\n  COUNT(od.product_id) as items,\n  o.order_date,\n  o.shipped_date\n\
+            FROM orders o JOIN customers cu ON o.customer_id = cu.customer_id JOIN\
+            \ order_details od ON o.order_id = od.order_id JOIN products p ON od.product_id\
+            \ = p.product_id JOIN categories c ON p.category_id = c.category_id WHERE\
+            \ (:country = 'ALL' OR o.ship_country = :country) AND (:category = 'ALL'\
+            \ OR c.category_name = :category) GROUP BY o.order_id, cu.company_name,\
+            \ o.ship_country, o.order_date, o.shipped_date ORDER BY o.order_date DESC\
+            \ LIMIT 200\n"
+          page_size: 20
+          default_sort:
+            column: order_date
+            direction: desc
+          columns:
+          - id: order_id
+            label: Order ID
+          - id: customer
+            label: Customer
+          - id: country
+            label: Country
+          - id: total
+            label: Total
+            format: currency
+            conditional:
+              rule: threshold
+              threshold: 1000
+          - id: items
+            label: Items
+            format: number
+          - id: order_date
+            label: Ordered
+            format: date
+          - id: shipped_date
+            label: Shipped
+            format: date
+    - name: By Country
+      rows:
+      - height: medium
+        items:
+        - type: chart
+          chart_type: horizontal_bar
+          title: Revenue by Country
+          query: 'SELECT o.ship_country as country, SUM(od.unit_price * od.quantity
+            * (1 - od.discount))::int as revenue FROM order_details od JOIN orders
+            o ON od.order_id = o.order_id GROUP BY o.ship_country ORDER BY revenue
+            DESC
+
+            '
+          x: country
+          y: revenue
+          y_format: currency
+        - type: chart
+          chart_type: bar
+          title: Orders by Country
+          query: 'SELECT ship_country as country, COUNT(*) as order_count FROM orders
+            GROUP BY ship_country ORDER BY order_count DESC
+
+            '
+          x: country
+          y: order_count
+      - height: medium
+        items:
+        - type: chart
+          chart_type: area
+          title: Freight Cost by Month
+          query: "SELECT\n  TO_CHAR(order_date, 'Mon YY') as month,\n  SUM(freight)::int\
+            \ as freight_cost\nFROM orders GROUP BY TO_CHAR(order_date, 'Mon YY'),\
+            \ DATE_TRUNC('month', order_date) ORDER BY DATE_TRUNC('month', order_date)\n"
+          x: month
+          y: freight_cost
+          y_format: currency
+    - name: Top Products
+      rows:
+      - height: medium
+        items:
+        - type: chart
+          chart_type: bar
+          title: Top 15 Products by Revenue
+          query: 'SELECT p.product_name as product, SUM(od.unit_price * od.quantity
+            * (1 - od.discount))::int as revenue FROM order_details od JOIN products
+            p ON od.product_id = p.product_id JOIN orders o ON od.order_id = o.order_id
+            WHERE (:country = ''ALL'' OR o.ship_country = :country) GROUP BY p.product_name
+            ORDER BY revenue DESC LIMIT 15
+
+            '
+          x: product
+          y: revenue
+          y_format: currency
+          data_labels: true
+      - height: large
+        items:
+        - type: table
+          title: Product Sales Detail
+          query: "SELECT\n  p.product_name as product,\n  c.category_name as category,\n\
+            \  SUM(od.quantity) as units_sold,\n  SUM(od.unit_price * od.quantity\
+            \ * (1 - od.discount))::numeric(10,2) as revenue,\n  COUNT(DISTINCT o.order_id)\
+            \ as order_count\nFROM order_details od JOIN products p ON od.product_id\
+            \ = p.product_id JOIN categories c ON p.category_id = c.category_id JOIN\
+            \ orders o ON od.order_id = o.order_id WHERE (:country = 'ALL' OR o.ship_country\
+            \ = :country) AND (:category = 'ALL' OR c.category_name = :category) GROUP\
+            \ BY p.product_name, c.category_name ORDER BY revenue DESC\n"
+          page_size: 20
+          default_sort:
+            column: revenue
+            direction: desc
+          columns:
+          - id: product
+            label: Product
+          - id: category
+            label: Category
+          - id: units_sold
+            label: Units Sold
+            format: number
+          - id: revenue
+            label: Revenue
+            format: currency
+            conditional:
+              rule: threshold
+              threshold: 10000
+          - id: order_count
+            label: Orders
+            format: number
+  - id: products
+    name: Products
+    icon: package
+    description: Product catalog and inventory levels
+    filters:
+    - id: prod_category
+      type: dropdown
+      label: Category
+      query: SELECT DISTINCT category_name FROM categories ORDER BY category_name
+      all: true
+      default: ALL
+    - id: supplier
+      type: dropdown
+      label: Supplier
+      query: SELECT DISTINCT company_name FROM suppliers ORDER BY company_name
+      all: true
+      default: ALL
+    - id: discontinued
+      type: toggle
+      label: Show Discontinued
+      default: false
+    rows:
+    - height: small
+      items:
+      - type: kpi
+        title: Total Products
+        query: 'SELECT COUNT(*) as current_value FROM products p JOIN categories c
+          ON p.category_id = c.category_id JOIN suppliers s ON p.supplier_id = s.supplier_id
+          WHERE (:prod_category = ''ALL'' OR c.category_name = :prod_category) AND
+          (:supplier = ''ALL'' OR s.company_name = :supplier) AND (:discontinued =
+          true OR p.discontinued = 0)
+
+          '
+      - type: kpi
+        title: Avg Unit Price
+        query: 'SELECT ROUND(AVG(p.unit_price)::numeric, 2) as current_value FROM
+          products p JOIN categories c ON p.category_id = c.category_id JOIN suppliers
+          s ON p.supplier_id = s.supplier_id WHERE (:prod_category = ''ALL'' OR c.category_name
+          = :prod_category) AND (:supplier = ''ALL'' OR s.company_name = :supplier)
+          AND (:discontinued = true OR p.discontinued = 0)
+
+          '
+        prefix: $
+        decimals: 2
+      - type: kpi
+        title: Total Units in Stock
+        query: 'SELECT SUM(p.units_in_stock) as current_value FROM products p JOIN
+          categories c ON p.category_id = c.category_id JOIN suppliers s ON p.supplier_id
+          = s.supplier_id WHERE (:prod_category = ''ALL'' OR c.category_name = :prod_category)
+          AND (:supplier = ''ALL'' OR s.company_name = :supplier) AND (:discontinued
+          = true OR p.discontinued = 0)
+
+          '
+        compact: true
+      - type: kpi
+        title: Units on Order
+        query: 'SELECT SUM(p.units_on_order) as current_value FROM products p JOIN
+          categories c ON p.category_id = c.category_id JOIN suppliers s ON p.supplier_id
+          = s.supplier_id WHERE (:prod_category = ''ALL'' OR c.category_name = :prod_category)
+          AND (:supplier = ''ALL'' OR s.company_name = :supplier) AND (:discontinued
+          = true OR p.discontinued = 0)
+
+          '
+        compact: true
+    - height: medium
+      items:
+      - type: chart
+        chart_type: bar
+        title: Products by Category
+        query: "SELECT c.category_name as category, COUNT(*) as count FROM products\
+          \ p JOIN categories c ON p.category_id = c.category_id WHERE (:supplier\
+          \ = 'ALL' OR EXISTS (\n  SELECT 1 FROM suppliers s WHERE s.supplier_id =\
+          \ p.supplier_id AND s.company_name = :supplier\n)) AND (:discontinued =\
+          \ true OR p.discontinued = 0) GROUP BY c.category_name ORDER BY count DESC\n"
+        x: category
+        y: count
+      - type: chart
+        chart_type: bar
+        title: Stock Value by Category
+        query: "SELECT c.category_name as category, SUM(p.unit_price * p.units_in_stock)::int\
+          \ as stock_value FROM products p JOIN categories c ON p.category_id = c.category_id\
+          \ WHERE (:supplier = 'ALL' OR EXISTS (\n  SELECT 1 FROM suppliers s WHERE\
+          \ s.supplier_id = p.supplier_id AND s.company_name = :supplier\n)) AND (:discontinued\
+          \ = true OR p.discontinued = 0) GROUP BY c.category_name ORDER BY stock_value\
+          \ DESC\n"
+        x: category
+        y: stock_value
+        y_format: currency
+    - height: large
+      items:
+      - type: table
+        title: Product Catalog
+        query: "SELECT\n  p.product_id,\n  p.product_name,\n  c.category_name as category,\n\
+          \  s.company_name as supplier,\n  p.unit_price,\n  p.units_in_stock,\n \
+          \ p.units_on_order,\n  p.reorder_level,\n  CASE WHEN p.discontinued = 1\
+          \ THEN 'Yes' ELSE 'No' END as discontinued\nFROM products p JOIN categories\
+          \ c ON p.category_id = c.category_id JOIN suppliers s ON p.supplier_id =\
+          \ s.supplier_id WHERE (:prod_category = 'ALL' OR c.category_name = :prod_category)\
+          \ AND (:supplier = 'ALL' OR s.company_name = :supplier) AND (:discontinued\
+          \ = true OR p.discontinued = 0) ORDER BY p.product_name\n"
+        page_size: 25
+        columns:
+        - id: product_id
+          label: ID
+        - id: product_name
+          label: Product
+        - id: category
+          label: Category
+        - id: supplier
+          label: Supplier
+        - id: unit_price
+          label: Price
+          format: currency
+        - id: units_in_stock
+          label: In Stock
+          format: number
+          conditional:
+            rule: threshold
+            threshold: 20
+        - id: units_on_order
+          label: On Order
+          format: number
+        - id: reorder_level
+          label: Reorder At
+          format: number
+        - id: discontinued
+          label: Discontinued
+  - id: customers
+    name: Customers
+    icon: users
+    description: Customer analysis and segmentation
+    filters:
+    - id: cust_country
+      type: dropdown
+      label: Country
+      query: SELECT DISTINCT country FROM customers ORDER BY country
+      all: true
+      default: ALL
+    rows:
+    - height: small
+      items:
+      - type: kpi
+        title: Total Customers
+        query: 'SELECT COUNT(*) as current_value FROM customers WHERE (:cust_country
+          = ''ALL'' OR country = :cust_country)
+
+          '
+      - type: kpi
+        title: Countries Served
+        query: 'SELECT COUNT(DISTINCT country) as current_value FROM customers WHERE
+          (:cust_country = ''ALL'' OR country = :cust_country)
+
+          '
+      - type: kpi
+        title: Avg Orders per Customer
+        query: 'SELECT ROUND(COUNT(o.order_id)::numeric / NULLIF(COUNT(DISTINCT cu.customer_id),
+          0), 1) as current_value FROM customers cu LEFT JOIN orders o ON cu.customer_id
+          = o.customer_id WHERE (:cust_country = ''ALL'' OR cu.country = :cust_country)
+
+          '
+        decimals: 1
+      - type: kpi
+        title: Avg Spend per Customer
+        query: 'SELECT ROUND(SUM(od.unit_price * od.quantity * (1 - od.discount))::numeric
+          / NULLIF(COUNT(DISTINCT cu.customer_id), 0), 0) as current_value FROM customers
+          cu LEFT JOIN orders o ON cu.customer_id = o.customer_id LEFT JOIN order_details
+          od ON o.order_id = od.order_id WHERE (:cust_country = ''ALL'' OR cu.country
+          = :cust_country)
+
+          '
+        prefix: $
+        compact: true
+    - height: medium
+      items:
+      - type: chart
+        chart_type: pie
+        title: Customers by Country (Top 10)
+        query: 'SELECT country, COUNT(*) as count FROM customers GROUP BY country
+          ORDER BY count DESC LIMIT 10
+
+          '
+        x: country
+        y: count
+      - type: chart
+        chart_type: horizontal_bar
+        title: Top 15 Customers by Revenue
+        query: "SELECT\n  cu.company_name as customer,\n  SUM(od.unit_price * od.quantity\
+          \ * (1 - od.discount))::int as revenue\nFROM customers cu JOIN orders o\
+          \ ON cu.customer_id = o.customer_id JOIN order_details od ON o.order_id\
+          \ = od.order_id WHERE (:cust_country = 'ALL' OR cu.country = :cust_country)\
+          \ GROUP BY cu.company_name ORDER BY revenue DESC LIMIT 15\n"
+        x: customer
+        y: revenue
+        y_format: currency
+    - height: large
+      items:
+      - type: table
+        title: Customer Directory
+        query: "SELECT\n  cu.customer_id as id,\n  cu.company_name,\n  cu.contact_name,\n\
+          \  cu.contact_title,\n  cu.country,\n  cu.city,\n  cu.phone,\n  COUNT(DISTINCT\
+          \ o.order_id) as total_orders,\n  COALESCE(SUM(od.unit_price * od.quantity\
+          \ * (1 - od.discount)), 0)::numeric(10,2) as total_spent\nFROM customers\
+          \ cu LEFT JOIN orders o ON cu.customer_id = o.customer_id LEFT JOIN order_details\
+          \ od ON o.order_id = od.order_id WHERE (:cust_country = 'ALL' OR cu.country\
+          \ = :cust_country) GROUP BY cu.customer_id, cu.company_name, cu.contact_name,\
+          \ cu.contact_title, cu.country, cu.city, cu.phone ORDER BY total_spent DESC\n"
+        page_size: 25
+        default_sort:
+          column: total_spent
+          direction: desc
+        columns:
+        - id: id
+          label: ID
+        - id: company_name
+          label: Company
+        - id: contact_name
+          label: Contact
+        - id: contact_title
+          label: Title
+        - id: country
+          label: Country
+        - id: city
+          label: City
+        - id: total_orders
+          label: Orders
+          format: number
+        - id: total_spent
+          label: Total Spent
+          format: currency
+          conditional:
+            rule: threshold
+            threshold: 10000
+  - id: employees
+    name: Employees
+    icon: briefcase
+    description: Employee performance and sales metrics
+    rows:
+    - height: small
+      items:
+      - type: kpi
+        title: Total Employees
+        query: 'SELECT COUNT(*) as current_value FROM employees
+
+          '
+      - type: kpi
+        title: Total Sales Handled
+        query: 'SELECT COUNT(*) as current_value FROM orders
+
+          '
+      - type: kpi
+        title: Revenue Generated
+        query: 'SELECT SUM(od.unit_price * od.quantity * (1 - od.discount))::numeric
+          as current_value FROM order_details od
+
+          '
+        prefix: $
+        compact: true
+        decimals: 0
+      - type: kpi
+        title: Avg Revenue per Employee
+        query: 'SELECT ROUND(SUM(od.unit_price * od.quantity * (1 - od.discount))::numeric
+          / (SELECT COUNT(*) FROM employees), 0) as current_value FROM order_details
+          od
+
+          '
+        prefix: $
+        compact: true
+    - height: medium
+      items:
+      - type: chart
+        chart_type: bar
+        title: Revenue by Employee
+        query: "SELECT\n  e.first_name || ' ' || e.last_name as employee,\n  SUM(od.unit_price\
+          \ * od.quantity * (1 - od.discount))::int as revenue\nFROM employees e JOIN\
+          \ orders o ON e.employee_id = o.employee_id JOIN order_details od ON o.order_id\
+          \ = od.order_id GROUP BY e.first_name, e.last_name ORDER BY revenue DESC\n"
+        x: employee
+        y: revenue
+        y_format: currency
+        data_labels: true
+      - type: chart
+        chart_type: bar
+        title: Orders by Employee
+        query: "SELECT\n  e.first_name || ' ' || e.last_name as employee,\n  COUNT(DISTINCT\
+          \ o.order_id) as order_count\nFROM employees e JOIN orders o ON e.employee_id\
+          \ = o.employee_id GROUP BY e.first_name, e.last_name ORDER BY order_count\
+          \ DESC\n"
+        x: employee
+        y: order_count
+    - height: large
+      items:
+      - type: table
+        title: Employee Performance
+        query: "SELECT\n  e.employee_id,\n  e.first_name || ' ' || e.last_name as\
+          \ name,\n  e.title,\n  e.city,\n  e.country,\n  e.hire_date,\n  COUNT(DISTINCT\
+          \ o.order_id) as orders_handled,\n  SUM(od.unit_price * od.quantity * (1\
+          \ - od.discount))::numeric(10,2) as total_revenue,\n  COUNT(DISTINCT o.customer_id)\
+          \ as customers_served\nFROM employees e LEFT JOIN orders o ON e.employee_id\
+          \ = o.employee_id LEFT JOIN order_details od ON o.order_id = od.order_id\
+          \ GROUP BY e.employee_id, e.first_name, e.last_name, e.title, e.city, e.country,\
+          \ e.hire_date ORDER BY total_revenue DESC\n"
+        page_size: 10
+        default_sort:
+          column: total_revenue
+          direction: desc
+        columns:
+        - id: employee_id
+          label: ID
+        - id: name
+          label: Name
+        - id: title
+          label: Title
+        - id: city
+          label: City
+        - id: country
+          label: Country
+        - id: hire_date
+          label: Hired
+          format: date
+        - id: orders_handled
+          label: Orders
+          format: number
+        - id: total_revenue
+          label: Revenue
+          format: currency
+          conditional:
+            rule: threshold
+            threshold: 100000
+        - id: customers_served
+          label: Customers
+          format: number
+  - id: shipping
+    name: Shipping
+    icon: truck
+    description: Supplier management and shipping operations
+    filters:
+    - id: shipper
+      type: dropdown
+      label: Shipper
+      query: SELECT DISTINCT company_name FROM shippers ORDER BY company_name
+      all: true
+      default: ALL
+    - id: ship_country
+      type: dropdown
+      label: Ship To
+      query: SELECT DISTINCT ship_country FROM orders ORDER BY ship_country
+      all: true
+      default: ALL
+    tabs:
+    - name: Shipping
+      default: true
+      rows:
+      - height: small
+        items:
+        - type: kpi
+          title: Total Shipments
+          query: 'SELECT COUNT(*) as current_value FROM orders o JOIN shippers s ON
+            o.ship_via = s.shipper_id WHERE (:shipper = ''ALL'' OR s.company_name
+            = :shipper) AND (:ship_country = ''ALL'' OR o.ship_country = :ship_country)
+
+            '
+        - type: kpi
+          title: Avg Freight Cost
+          query: 'SELECT ROUND(AVG(o.freight)::numeric, 2) as current_value FROM orders
+            o JOIN shippers s ON o.ship_via = s.shipper_id WHERE (:shipper = ''ALL''
+            OR s.company_name = :shipper) AND (:ship_country = ''ALL'' OR o.ship_country
+            = :ship_country)
+
+            '
+          prefix: $
+          decimals: 2
+        - type: kpi
+          title: Total Freight
+          query: 'SELECT SUM(o.freight)::numeric as current_value FROM orders o JOIN
+            shippers s ON o.ship_via = s.shipper_id WHERE (:shipper = ''ALL'' OR s.company_name
+            = :shipper) AND (:ship_country = ''ALL'' OR o.ship_country = :ship_country)
+
+            '
+          prefix: $
+          compact: true
+        - type: kpi
+          title: Countries Shipped To
+          query: 'SELECT COUNT(DISTINCT o.ship_country) as current_value FROM orders
+            o JOIN shippers s ON o.ship_via = s.shipper_id WHERE (:shipper = ''ALL''
+            OR s.company_name = :shipper) AND (:ship_country = ''ALL'' OR o.ship_country
+            = :ship_country)
+
+            '
+      - height: medium
+        items:
+        - type: chart
+          chart_type: donut
+          title: Orders by Shipper
+          query: 'SELECT s.company_name as shipper, COUNT(*) as count FROM orders
+            o JOIN shippers s ON o.ship_via = s.shipper_id WHERE (:ship_country =
+            ''ALL'' OR o.ship_country = :ship_country) GROUP BY s.company_name ORDER
+            BY count DESC
+
+            '
+          x: shipper
+          y: count
+        - type: chart
+          chart_type: bar
+          title: Freight Cost by Shipper
+          query: 'SELECT s.company_name as shipper, SUM(o.freight)::int as freight
+            FROM orders o JOIN shippers s ON o.ship_via = s.shipper_id WHERE (:ship_country
+            = ''ALL'' OR o.ship_country = :ship_country) GROUP BY s.company_name ORDER
+            BY freight DESC
+
+            '
+          x: shipper
+          y: freight
+          y_format: currency
+      - height: medium
+        items:
+        - type: chart
+          chart_type: horizontal_bar
+          title: Top Shipping Destinations
+          query: 'SELECT o.ship_country as country, COUNT(*) as shipments FROM orders
+            o JOIN shippers s ON o.ship_via = s.shipper_id WHERE (:shipper = ''ALL''
+            OR s.company_name = :shipper) GROUP BY o.ship_country ORDER BY shipments
+            DESC LIMIT 15
+
+            '
+          x: country
+          y: shipments
+    - name: Suppliers
+      rows:
+      - height: small
+        items:
+        - type: kpi
+          title: Total Suppliers
+          query: 'SELECT COUNT(*) as current_value FROM suppliers
+
+            '
+        - type: kpi
+          title: Supplier Countries
+          query: 'SELECT COUNT(DISTINCT country) as current_value FROM suppliers
+
+            '
+        - type: kpi
+          title: Avg Products per Supplier
+          query: 'SELECT ROUND(COUNT(p.product_id)::numeric / NULLIF(COUNT(DISTINCT
+            s.supplier_id), 0), 1) as current_value FROM suppliers s LEFT JOIN products
+            p ON s.supplier_id = p.supplier_id
+
+            '
+          decimals: 1
+      - height: medium
+        items:
+        - type: chart
+          chart_type: bar
+          title: Suppliers by Country
+          query: 'SELECT country, COUNT(*) as count FROM suppliers GROUP BY country
+            ORDER BY count DESC
+
+            '
+          x: country
+          y: count
+        - type: chart
+          chart_type: pie
+          title: Products by Supplier Country
+          query: 'SELECT s.country, COUNT(p.product_id) as products FROM suppliers
+            s JOIN products p ON s.supplier_id = p.supplier_id GROUP BY s.country
+            ORDER BY products DESC LIMIT 10
+
+            '
+          x: country
+          y: products
+      - height: large
+        items:
+        - type: table
+          title: Supplier Directory
+          query: "SELECT\n  s.supplier_id,\n  s.company_name,\n  s.contact_name,\n\
+            \  s.contact_title,\n  s.country,\n  s.city,\n  s.phone,\n  COUNT(p.product_id)\
+            \ as product_count\nFROM suppliers s LEFT JOIN products p ON s.supplier_id\
+            \ = p.supplier_id GROUP BY s.supplier_id, s.company_name, s.contact_name,\
+            \ s.contact_title, s.country, s.city, s.phone ORDER BY s.company_name\n"
+          page_size: 15
+          columns:
+          - id: supplier_id
+            label: ID
+          - id: company_name
+            label: Company
+          - id: contact_name
+            label: Contact
+          - id: contact_title
+            label: Title
+          - id: country
+            label: Country
+          - id: city
+            label: City
+          - id: phone
+            label: Phone
+          - id: product_count
+            label: Products
+            format: number
+  - id: overview
+    name: Overview
+    icon: layers
+    description: All widget types in one view
+    filters:
+    - id: ov_country
+      type: dropdown
+      label: Country
+      query: SELECT DISTINCT ship_country FROM orders ORDER BY ship_country
+      all: true
+      default: ALL
+    - id: ov_category
+      type: dropdown
+      label: Category
+      options: ["Beverages", "Condiments", "Confections", "Dairy Products", "Grains/Cereals", "Meat/Poultry", "Produce", "Seafood"]
+      all: true
+      default: ALL
+    - id: ov_shipper
+      type: dropdown
+      label: Shippers
+      query: SELECT DISTINCT company_name FROM shippers ORDER BY company_name
+      multi: true
+      all: true
+      default: ALL
+    - id: ov_search
+      type: text
+      label: Search
+      default: ""
+    - id: ov_date
+      type: date
+      label: Date
+      default: ""
+    - id: ov_daterange
+      type: daterange
+      label: Period
+      min_date: "1996-01-01"
+      max_date: "1998-12-31"
+    - id: ov_price_range
+      type: number_range
+      label: Price Range
+      min: 0
+      max: 500
+      step: 10
+    - id: ov_discontinued
+      type: toggle
+      label: Include Discontinued
+      default: false
+    rows:
+    - height: small
+      items:
+      - type: kpi
+        title: Total Revenue
+        query: >
+          SELECT SUM(od.unit_price * od.quantity * (1 - od.discount))::numeric as current_value
+          FROM order_details od
+          JOIN orders o ON od.order_id = o.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          AND od.unit_price BETWEEN COALESCE(:ov_price_range_min, 0) AND COALESCE(:ov_price_range_max, 99999)
+        prefix: "$"
+        compact: true
+        decimals: 0
+      - type: kpi
+        title: Total Orders
+        query: >
+          SELECT COUNT(DISTINCT o.order_id) as current_value
+          FROM orders o
+          JOIN order_details od ON o.order_id = od.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          AND od.unit_price BETWEEN COALESCE(:ov_price_range_min, 0) AND COALESCE(:ov_price_range_max, 99999)
+        compact: true
+      - type: kpi
+        title: Avg Order Value
+        query: >
+          SELECT ROUND(AVG(order_total)::numeric, 2) as current_value FROM (
+            SELECT o.order_id, SUM(od.unit_price * od.quantity * (1 - od.discount)) as order_total
+            FROM orders o
+            JOIN order_details od ON o.order_id = od.order_id
+            JOIN products p ON od.product_id = p.product_id
+            JOIN categories c ON p.category_id = c.category_id
+            WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+            AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+            AND (:ov_daterange_start IS NULL OR o.order_date >= :ov_daterange_start::date)
+            AND (:ov_daterange_end IS NULL OR o.order_date <= :ov_daterange_end::date)
+            AND (:ov_discontinued = true OR p.discontinued = 0)
+            AND od.unit_price BETWEEN COALESCE(:ov_price_range_min, 0) AND COALESCE(:ov_price_range_max, 99999)
+            GROUP BY o.order_id
+          ) sub
+        prefix: "$"
+        decimals: 2
+      - type: kpi
+        title: Unique Customers
+        query: >
+          SELECT COUNT(DISTINCT o.customer_id) as current_value
+          FROM orders o
+          JOIN order_details od ON o.order_id = od.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+    - title: Revenue Trends
+      height: medium
+      items:
+      - type: chart
+        chart_type: bar
+        title: Revenue by Month
+        query: >
+          SELECT TO_CHAR(o.order_date, 'Mon YY') as month,
+          SUM(od.unit_price * od.quantity * (1 - od.discount))::int as revenue
+          FROM order_details od
+          JOIN orders o ON od.order_id = o.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          AND od.unit_price BETWEEN COALESCE(:ov_price_range_min, 0) AND COALESCE(:ov_price_range_max, 99999)
+          GROUP BY TO_CHAR(o.order_date, 'Mon YY'), DATE_TRUNC('month', o.order_date)
+          ORDER BY DATE_TRUNC('month', o.order_date)
+        x: month
+        y: revenue
+        y_format: currency
+      - type: chart
+        chart_type: line
+        title: Orders per Month
+        query: >
+          SELECT TO_CHAR(o.order_date, 'Mon YY') as month, COUNT(DISTINCT o.order_id) as orders
+          FROM orders o
+          JOIN order_details od ON o.order_id = od.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          GROUP BY TO_CHAR(o.order_date, 'Mon YY'), DATE_TRUNC('month', o.order_date)
+          ORDER BY DATE_TRUNC('month', o.order_date)
+        x: month
+        y: orders
+    - title: Geography & Logistics
+      height: medium
+      items:
+      - type: chart
+        chart_type: area
+        title: Freight Cost Trend
+        query: >
+          SELECT TO_CHAR(o.order_date, 'Mon YY') as month, SUM(o.freight)::int as freight
+          FROM orders o
+          JOIN order_details od ON o.order_id = od.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          GROUP BY TO_CHAR(o.order_date, 'Mon YY'), DATE_TRUNC('month', o.order_date)
+          ORDER BY DATE_TRUNC('month', o.order_date)
+        x: month
+        y: freight
+        y_format: currency
+      - type: chart
+        chart_type: horizontal_bar
+        title: Revenue by Country (Top 10)
+        query: >
+          SELECT o.ship_country as country, SUM(od.unit_price * od.quantity * (1 - od.discount))::int as revenue
+          FROM order_details od
+          JOIN orders o ON od.order_id = o.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          AND od.unit_price BETWEEN COALESCE(:ov_price_range_min, 0) AND COALESCE(:ov_price_range_max, 99999)
+          GROUP BY o.ship_country ORDER BY revenue DESC LIMIT 10
+        x: country
+        y: revenue
+        y_format: currency
+    - title: Category Breakdown
+      height: medium
+      items:
+      - type: chart
+        chart_type: pie
+        title: Orders by Shipper
+        query: >
+          SELECT s.company_name as shipper, COUNT(*) as count
+          FROM orders o
+          JOIN shippers s ON o.ship_via = s.shipper_id
+          JOIN order_details od ON o.order_id = od.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          GROUP BY s.company_name ORDER BY count DESC
+        x: shipper
+        y: count
+      - type: chart
+        chart_type: donut
+        title: Revenue by Category
+        query: >
+          SELECT c.category_name as category, SUM(od.unit_price * od.quantity * (1 - od.discount))::int as revenue
+          FROM order_details od
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          JOIN orders o ON od.order_id = o.order_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          AND od.unit_price BETWEEN COALESCE(:ov_price_range_min, 0) AND COALESCE(:ov_price_range_max, 99999)
+          GROUP BY c.category_name ORDER BY revenue DESC
+        x: category
+        y: revenue
+    - title: Order Details
+      height: large
+      items:
+      - type: table
+        title: Recent Orders
+        query: >
+          SELECT o.order_id, cu.company_name as customer, o.ship_country as country,
+          SUM(od.unit_price * od.quantity * (1 - od.discount))::numeric(10,2) as total,
+          COUNT(od.product_id) as items, o.order_date
+          FROM orders o
+          JOIN customers cu ON o.customer_id = cu.customer_id
+          JOIN order_details od ON o.order_id = od.order_id
+          JOIN products p ON od.product_id = p.product_id
+          JOIN categories c ON p.category_id = c.category_id
+          WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
+          AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
+          AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+          AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
+          AND (:ov_discontinued = true OR p.discontinued = 0)
+          AND od.unit_price BETWEEN COALESCE(:ov_price_range_min, 0) AND COALESCE(:ov_price_range_max, 99999)
+          AND (:ov_search = '' OR cu.company_name ILIKE '%' || :ov_search || '%')
+          GROUP BY o.order_id, cu.company_name, o.ship_country, o.order_date
+          ORDER BY o.order_date DESC LIMIT 100
+        page_size: 10
+        default_sort:
+          column: order_date
+          direction: desc
+        columns:
+        - id: order_id
+          label: Order ID
+        - id: customer
+          label: Customer
+        - id: country
+          label: Country
+        - id: total
+          label: Total
+          format: currency
+          conditional:
+            rule: threshold
+            threshold: 1000
+        - id: items
+          label: Items
+          format: number
+        - id: order_date
+          label: Date
+          format: date
+  ui:
+    base_color: zinc
+    accent_color: violet
+    chart_palette: vibrant
+    radius: 1.0
+    mode: light

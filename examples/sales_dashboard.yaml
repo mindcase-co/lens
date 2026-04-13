@@ -1,0 +1,437 @@
+app:
+  title: "Sales Dashboard"
+  theme: "system"
+  port: 8080
+  date_format: "MMM DD, YYYY"
+  currency: "USD"
+  timezone: "America/New_York"
+  debug: true
+
+  database:
+    connection: "postgresql://postgres:lens@localhost:5432/lens"
+    pool_size: 10
+    query_timeout: 30
+
+  sidebar:
+    title: "Lens Demo"
+    sections:
+      - label: "Analytics"
+        pages: ["sales", "customers"]
+      - label: "Operations"
+        pages: ["orders"]
+    footer: "Powered by Lens v0.1.0"
+
+  pages:
+    - id: "sales"
+      name: "Sales"
+      icon: "bar-chart"
+      default: true
+      description: "Revenue and sales performance"
+
+      filters:
+        - id: "region"
+          type: "dropdown"
+          label: "Region"
+          query: "SELECT DISTINCT region FROM sales ORDER BY region"
+          all: true
+          default: "ALL"
+
+      tabs:
+        - name: "Overview"
+          default: true
+
+          filters:
+            - id: "product"
+              type: "dropdown"
+              label: "Product"
+              query: "SELECT DISTINCT product FROM sales ORDER BY product"
+              all: true
+              default: "ALL"
+
+          rows:
+            - height: "small"
+              items:
+                - type: "kpi"
+                  title: "Total Revenue"
+                  query: >
+                    SELECT SUM(amount) as current_value
+                    FROM sales
+                    WHERE (:region = 'ALL' OR region = :region)
+                    AND (:product = 'ALL' OR product = :product)
+                  prefix: "$"
+                  compact: true
+                  decimals: 0
+
+                - type: "kpi"
+                  title: "Total Orders"
+                  query: >
+                    SELECT COUNT(*) as current_value
+                    FROM orders
+                    WHERE (:region = 'ALL' OR region = :region)
+                  compact: true
+
+                - type: "kpi"
+                  title: "Avg Order Value"
+                  query: >
+                    SELECT AVG(amount) as current_value
+                    FROM orders
+                    WHERE (:region = 'ALL' OR region = :region)
+                  prefix: "$"
+                  decimals: 2
+
+                - type: "kpi"
+                  title: "Active Customers"
+                  query: >
+                    SELECT COUNT(DISTINCT customer_id) as current_value
+                    FROM orders
+                    WHERE (:region = 'ALL' OR region = :region)
+
+            - title: "Revenue Trends"
+              height: "medium"
+              items:
+                - type: "chart"
+                  chart_type: "bar"
+                  title: "Revenue by Month"
+                  query: >
+                    SELECT
+                      TO_CHAR(date, 'Mon YY') as month,
+                      SUM(amount) as revenue
+                    FROM sales
+                    WHERE (:region = 'ALL' OR region = :region)
+                    AND (:product = 'ALL' OR product = :product)
+                    GROUP BY TO_CHAR(date, 'Mon YY'), DATE_TRUNC('month', date)
+                    ORDER BY DATE_TRUNC('month', date)
+                  x: "month"
+                  y: "revenue"
+                  y_format: "currency"
+
+                - type: "chart"
+                  chart_type: "line"
+                  title: "Orders per Month"
+                  query: >
+                    SELECT
+                      TO_CHAR(date, 'Mon YY') as month,
+                      COUNT(*) as orders
+                    FROM orders
+                    WHERE (:region = 'ALL' OR region = :region)
+                    GROUP BY TO_CHAR(date, 'Mon YY'), DATE_TRUNC('month', date)
+                    ORDER BY DATE_TRUNC('month', date)
+                  x: "month"
+                  y: "orders"
+                  y_format: "compact"
+
+            - height: "medium"
+              items:
+                - type: "chart"
+                  chart_type: "pie"
+                  title: "Revenue by Region"
+                  query: >
+                    SELECT region, SUM(amount)::int as revenue
+                    FROM sales
+                    WHERE (:product = 'ALL' OR product = :product)
+                    GROUP BY region
+                    ORDER BY revenue DESC
+                  x: "region"
+                  y: "revenue"
+
+                - type: "chart"
+                  chart_type: "donut"
+                  title: "Revenue by Product"
+                  query: >
+                    SELECT product, SUM(amount)::int as revenue
+                    FROM sales
+                    WHERE (:region = 'ALL' OR region = :region)
+                    GROUP BY product
+                    ORDER BY revenue DESC
+                  x: "product"
+                  y: "revenue"
+
+            - height: "large"
+              items:
+                - type: "table"
+                  title: "Recent Sales"
+                  query: >
+                    SELECT
+                      s.id,
+                      c.name as customer,
+                      s.region,
+                      s.product,
+                      s.amount,
+                      s.quantity,
+                      s.date
+                    FROM sales s
+                    JOIN customers c ON s.customer_id = c.id
+                    WHERE (:region = 'ALL' OR s.region = :region)
+                    AND (:product = 'ALL' OR s.product = :product)
+                    ORDER BY s.date DESC
+                    LIMIT 200
+                  page_size: 20
+                  default_sort:
+                    column: "date"
+                    direction: "desc"
+                  columns:
+                    - id: "id"
+                      label: "ID"
+                    - id: "customer"
+                      label: "Customer"
+                    - id: "region"
+                      label: "Region"
+                    - id: "product"
+                      label: "Product"
+                    - id: "amount"
+                      label: "Amount"
+                      format: "currency"
+                      conditional:
+                        rule: "threshold"
+                        threshold: 1000
+                    - id: "quantity"
+                      label: "Qty"
+                      format: "number"
+                    - id: "date"
+                      label: "Date"
+                      format: "date"
+
+        - name: "By Region"
+          rows:
+            - height: "medium"
+              items:
+                - type: "chart"
+                  chart_type: "horizontal_bar"
+                  title: "Revenue by Region"
+                  query: >
+                    SELECT region, SUM(amount)::int as revenue
+                    FROM sales
+                    GROUP BY region
+                    ORDER BY revenue DESC
+                  x: "region"
+                  y: "revenue"
+                  y_format: "currency"
+
+                - type: "chart"
+                  chart_type: "bar"
+                  title: "Orders by Region"
+                  query: >
+                    SELECT region, COUNT(*) as order_count
+                    FROM orders
+                    GROUP BY region
+                    ORDER BY order_count DESC
+                  x: "region"
+                  y: "order_count"
+
+        - name: "Products"
+          rows:
+            - height: "medium"
+              items:
+                - type: "chart"
+                  chart_type: "bar"
+                  title: "Revenue by Product"
+                  query: >
+                    SELECT product, SUM(amount)::int as revenue
+                    FROM sales
+                    WHERE (:region = 'ALL' OR region = :region)
+                    GROUP BY product
+                    ORDER BY revenue DESC
+                  x: "product"
+                  y: "revenue"
+                  y_format: "currency"
+                  data_labels: true
+
+    - id: "customers"
+      name: "Customers"
+      icon: "users"
+
+      filters:
+        - id: "status"
+          type: "dropdown"
+          label: "Status"
+          options: ["Active", "Inactive", "Churned"]
+          all: true
+
+      rows:
+        - height: "small"
+          items:
+            - type: "kpi"
+              title: "Total Customers"
+              query: >
+                SELECT COUNT(*) as current_value
+                FROM customers
+                WHERE (:status = 'ALL' OR status = :status)
+
+            - type: "kpi"
+              title: "Active Customers"
+              query: >
+                SELECT COUNT(*) as current_value
+                FROM customers
+                WHERE status = 'Active'
+
+            - type: "kpi"
+              title: "Churn Rate"
+              query: >
+                SELECT
+                  ROUND(COUNT(*) FILTER (WHERE status = 'Churned')::numeric /
+                  NULLIF(COUNT(*), 0) * 100, 1) as current_value
+                FROM customers
+              suffix: "%"
+
+        - height: "medium"
+          items:
+            - type: "chart"
+              chart_type: "pie"
+              title: "Customers by Status"
+              query: >
+                SELECT status, COUNT(*) as count
+                FROM customers
+                GROUP BY status
+              x: "status"
+              y: "count"
+
+            - type: "chart"
+              chart_type: "bar"
+              title: "Customers by Region"
+              query: >
+                SELECT region, COUNT(*) as count
+                FROM customers
+                WHERE (:status = 'ALL' OR status = :status)
+                GROUP BY region
+                ORDER BY count DESC
+              x: "region"
+              y: "count"
+
+        - height: "large"
+          items:
+            - type: "table"
+              title: "Customer List"
+              query: >
+                SELECT id, name, email, status, region, created_at
+                FROM customers
+                WHERE (:status = 'ALL' OR status = :status)
+                ORDER BY created_at DESC
+              page_size: 25
+              columns:
+                - id: "id"
+                  label: "ID"
+                - id: "name"
+                  label: "Name"
+                - id: "email"
+                  label: "Email"
+                - id: "status"
+                  label: "Status"
+                - id: "region"
+                  label: "Region"
+                - id: "created_at"
+                  label: "Joined"
+                  format: "date"
+
+    - id: "orders"
+      name: "Orders"
+      icon: "shopping-cart"
+
+      filters:
+        - id: "order_status"
+          type: "dropdown"
+          label: "Status"
+          query: "SELECT DISTINCT status FROM orders ORDER BY status"
+          all: true
+        - id: "payment"
+          type: "dropdown"
+          label: "Payment Method"
+          query: "SELECT DISTINCT payment_method FROM orders ORDER BY payment_method"
+          all: true
+
+      rows:
+        - height: "small"
+          items:
+            - type: "kpi"
+              title: "Total Orders"
+              query: >
+                SELECT COUNT(*) as current_value FROM orders
+                WHERE (:order_status = 'ALL' OR status = :order_status)
+                AND (:payment = 'ALL' OR payment_method = :payment)
+
+            - type: "kpi"
+              title: "Total Revenue"
+              query: >
+                SELECT SUM(amount) as current_value FROM orders
+                WHERE (:order_status = 'ALL' OR status = :order_status)
+                AND (:payment = 'ALL' OR payment_method = :payment)
+              prefix: "$"
+              compact: true
+
+            - type: "kpi"
+              title: "Completed Rate"
+              query: >
+                SELECT ROUND(
+                  COUNT(*) FILTER (WHERE status = 'completed')::numeric /
+                  NULLIF(COUNT(*), 0) * 100, 1
+                ) as current_value
+                FROM orders
+                WHERE (:payment = 'ALL' OR payment_method = :payment)
+              suffix: "%"
+
+        - height: "medium"
+          items:
+            - type: "chart"
+              chart_type: "donut"
+              title: "Orders by Status"
+              query: >
+                SELECT status, COUNT(*) as count
+                FROM orders
+                WHERE (:payment = 'ALL' OR payment_method = :payment)
+                GROUP BY status
+              x: "status"
+              y: "count"
+
+            - type: "chart"
+              chart_type: "bar"
+              title: "Orders by Payment Method"
+              query: >
+                SELECT payment_method, COUNT(*) as count
+                FROM orders
+                WHERE (:order_status = 'ALL' OR status = :order_status)
+                GROUP BY payment_method
+                ORDER BY count DESC
+              x: "payment_method"
+              y: "count"
+
+        - height: "large"
+          items:
+            - type: "table"
+              title: "All Orders"
+              query: >
+                SELECT
+                  o.id,
+                  c.name as customer,
+                  o.region,
+                  o.amount,
+                  o.status,
+                  o.payment_method,
+                  o.date
+                FROM orders o
+                JOIN customers c ON o.customer_id = c.id
+                WHERE (:order_status = 'ALL' OR o.status = :order_status)
+                AND (:payment = 'ALL' OR o.payment_method = :payment)
+                ORDER BY o.date DESC
+                LIMIT 300
+              page_size: 25
+              default_sort:
+                column: "date"
+                direction: "desc"
+              columns:
+                - id: "id"
+                  label: "Order ID"
+                - id: "customer"
+                  label: "Customer"
+                - id: "region"
+                  label: "Region"
+                - id: "amount"
+                  label: "Amount"
+                  format: "currency"
+                  conditional:
+                    rule: "positive_negative"
+                - id: "status"
+                  label: "Status"
+                - id: "payment_method"
+                  label: "Payment"
+                - id: "date"
+                  label: "Date"
+                  format: "date"
