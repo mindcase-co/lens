@@ -83,8 +83,8 @@ export function DataTable({ config, queryParams, queryRegistry, refreshInterval,
           </button>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
+      <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
+        <div className="overflow-auto flex-1 min-h-0">
           <Table>
             <TableHeader>
               <TableRow className="border-border/50 hover:bg-transparent">
@@ -115,7 +115,7 @@ export function DataTable({ config, queryParams, queryRegistry, refreshInterval,
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between py-3 border-t border-border/30">
+        <div className="flex items-center justify-between pt-3 border-t border-border/30 shrink-0">
           <span className="text-[11px] text-muted-foreground/50">{page * pageSize + 1}–{Math.min((page + 1) * pageSize, sorted.length)} of {sorted.length}</span>
           <div className="flex items-center gap-1.5">
             <button disabled={page === 0} onClick={() => setPage(p => p - 1)}
@@ -135,5 +135,5 @@ export function DataTable({ config, queryParams, queryRegistry, refreshInterval,
 
   return fullscreen ? (
     <Dialog open onOpenChange={() => setFullscreen(false)}><DialogContent className="max-w-[95vw] max-h-[90vh] overflow-auto"><Card className="border-0 shadow-none">{tableContent}</Card></DialogContent></Dialog>
-  ) : <Card className="h-full border-border/50 p-4">{tableContent}</Card>;
+  ) : <Card className="h-full border-border/50 p-4 flex flex-col">{tableContent}</Card>;
 }
