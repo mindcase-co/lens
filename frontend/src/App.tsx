@@ -62,7 +62,7 @@ export default function App() {
             <AppSidebar config={config.sidebar} pages={config.pages} activePageId={activePageId} activeTab={activeTab}
               onPageChange={handlePageChange} onTabChange={setActiveTab} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} themeMode={mode} />
           )}
-          <main className="flex-1 min-w-0 transition-all duration-300" style={{ marginLeft: showSidebar ? (sidebarCollapsed ? "4rem" : "16rem") : "0" }}>
+          <main className="flex-1 min-w-0 overflow-x-hidden transition-all duration-300" style={{ marginLeft: showSidebar ? (sidebarCollapsed ? "4rem" : "16rem") : "0" }}>
             <header className="sticky top-0 z-40 flex items-center justify-between h-14 px-8 bg-background/80 backdrop-blur-xl border-b border-border/40">
               <div className="flex items-center gap-1.5 text-[13px]">
                 <span className="text-muted-foreground/70">{activePage?.name ?? config.title}</span>
