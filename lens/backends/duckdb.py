@@ -104,10 +104,14 @@ class DuckDBBackend(DatabaseBackend):
         processed_query, positional_params = self._convert_named_params(query, params or {})
 
         def _run() -> list[dict[str, Any]]:
-            result = self.conn.execute(processed_query, positional_params)
-            columns = [desc[0] for desc in result.description]
-            rows = result.fetchall()
-            return [dict(zip(columns, row)) for row in rows]
+            cursor = self.conn.cursor()
+            try:
+                result = cursor.execute(processed_query, positional_params)
+                columns = [desc[0] for desc in result.description]
+                rows = result.fetchall()
+                return [dict(zip(columns, row)) for row in rows]
+            finally:
+                cursor.close()
 
         return await asyncio.to_thread(_run)
 
@@ -115,7 +119,11 @@ class DuckDBBackend(DatabaseBackend):
         try:
             if not self.conn:
                 return False
-            result = await asyncio.to_thread(lambda: self.conn.execute("SELECT 1").fetchone()[0])
-            return result == 1
+            cursor = self.conn.cursor()
+            try:
+                result = cursor.execute("SELECT 1").fetchone()[0]
+                return result == 1
+            finally:
+                cursor.close()
         except Exception:
             return False

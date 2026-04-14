@@ -71,7 +71,7 @@ def create_app(
             rows = await app.state.db.execute_query(request.query, request.params)
             return {"data": rows, "count": len(rows)}
         except Exception as e:
-            logger.error(f"Query failed: {e}")
+            logger.error(f"Query failed: {e}\n  SQL: {request.query}\n  Params: {request.params}")
             raise HTTPException(status_code=400, detail=str(e))
 
     @app.post("/api/filter-options")
