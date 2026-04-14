@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mindcase-lens"
-version = "0.2.2"
+version = "0.4.0"
 description = "Instant dashboards from Claude Code. Connect to PostgreSQL, CSV, Excel, or Parquet — get a production-ready analytics dashboard in under a minute."
 readme = "README.md"
 license = "MIT"
@@ -64,6 +64,7 @@ dependencies = [
     "watchfiles>=0.21.0",
     "websockets>=12.0",
     "click>=8.0",
+    "mcp[cli]>=1.0.0",
 ]
 
 [project.scripts]

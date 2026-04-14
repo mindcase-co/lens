@@ -96,7 +96,7 @@ class ReferenceLine(BaseModel):
 
 
 class ComboSeries(BaseModel):
-    column: str
+    name: str
     as_type: Literal["bar", "line"] = Field(alias="as")
     axis: Literal["left", "right"] = "left"
 
@@ -222,9 +222,11 @@ class PageConfig(BaseModel):
 
 
 class UIConfig(BaseModel):
-    base_color: str = "neutral"
+    theme: str = "slate"
+    base_color: str = "slate"
     accent_color: str = "default"
-    chart_palette: str = "default"
+    chart_palette: str = "slate"
+    font_family: str = "system"
     radius: float = 0.625
     mode: Literal["light", "dark", "system"] = "system"
 

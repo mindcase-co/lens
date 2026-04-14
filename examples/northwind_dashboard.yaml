@@ -870,8 +870,8 @@ app:
             JOIN categories c ON p.category_id = c.category_id
             WHERE (:ov_country = 'ALL' OR o.ship_country = :ov_country)
             AND (:ov_category = 'ALL' OR c.category_name = :ov_category)
-            AND (:ov_daterange_start IS NULL OR o.order_date >= :ov_daterange_start::date)
-            AND (:ov_daterange_end IS NULL OR o.order_date <= :ov_daterange_end::date)
+            AND (COALESCE(:ov_daterange_start, '') = '' OR o.order_date >= CAST(:ov_daterange_start AS date))
+            AND (COALESCE(:ov_daterange_end, '') = '' OR o.order_date <= CAST(:ov_daterange_end AS date))
             AND (:ov_discontinued = true OR p.discontinued = 0)
             AND od.unit_price BETWEEN COALESCE(:ov_price_range_min, 0) AND COALESCE(:ov_price_range_max, 99999)
             GROUP BY o.order_id

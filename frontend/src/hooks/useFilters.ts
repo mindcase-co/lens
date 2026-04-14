@@ -1,17 +1,61 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { FilterConfig } from "@/types/config";
 import { fetchFilterOptions } from "@/api/client";
+import { updateUrlFilters } from "@/hooks/useUrlState";
+
+function parseUrlFilterValue(raw: string, type: string): unknown {
+  if (type === "toggle") return raw === "true";
+  if (type === "number_range" || type === "daterange") {
+    try { return JSON.parse(raw); } catch { return raw; }
+  }
+  return raw;
+}
+
+// Snapshot URL filters ONCE at page load, before React does anything
+const INITIAL_URL_FILTERS: Record<string, string> = {};
+(() => {
+  const params = new URLSearchParams(window.location.search);
+  params.forEach((v, k) => {
+    if (k !== "page" && k !== "tab") INITIAL_URL_FILTERS[k] = v;
+  });
+})();
 
 export function useFilters(filters: FilterConfig[], queryRegistry: Record<string, string>) {
-  const [values, setValues] = useState<Record<string, unknown>>({});
-  const [options, setOptions] = useState<Record<string, unknown[]>>({});
-  const [loadingOptions, setLoadingOptions] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
+  const [values, setValues] = useState<Record<string, unknown>>(() => {
+    // Initialize state from URL immediately — no effects needed
     const defaults: Record<string, unknown> = {};
     for (const f of filters) {
-      if (f.default !== undefined) defaults[f.id] = f.default;
-      else if (f.type === "dropdown" && f.all) defaults[f.id] = "ALL";
+      if (INITIAL_URL_FILTERS[f.id] !== undefined) {
+        defaults[f.id] = parseUrlFilterValue(INITIAL_URL_FILTERS[f.id], f.type);
+      } else if (f.default !== undefined) {
+        defaults[f.id] = f.default;
+      } else if (f.type === "dropdown" && f.all) {
+        defaults[f.id] = "ALL";
+      }
+    }
+    return defaults;
+  });
+  const [options, setOptions] = useState<Record<string, unknown[]>>({});
+  const [loadingOptions, setLoadingOptions] = useState<Record<string, boolean>>({});
+  const userHasInteracted = useRef(false);
+
+  // Re-initialize when filters change (page/tab navigation) but NOT on reload
+  const prevFilterKey = useRef(filters.map(f => f.id).join(","));
+  useEffect(() => {
+    const key = filters.map(f => f.id).join(",");
+    if (key === prevFilterKey.current && Object.keys(values).length > 0) return;
+    prevFilterKey.current = key;
+
+    const defaults: Record<string, unknown> = {};
+    for (const f of filters) {
+      // On page change, only use URL values if user hasn't navigated away
+      if (!userHasInteracted.current && INITIAL_URL_FILTERS[f.id] !== undefined) {
+        defaults[f.id] = parseUrlFilterValue(INITIAL_URL_FILTERS[f.id], f.type);
+      } else if (f.default !== undefined) {
+        defaults[f.id] = f.default;
+      } else if (f.type === "dropdown" && f.all) {
+        defaults[f.id] = "ALL";
+      }
     }
     setValues(defaults);
   }, [filters]);
@@ -34,6 +78,7 @@ export function useFilters(filters: FilterConfig[], queryRegistry: Record<string
   }, [queryRegistry]);
 
   const setValue = useCallback((filterId: string, value: unknown) => {
+    userHasInteracted.current = true;
     setValues(prev => {
       const next = { ...prev, [filterId]: value };
       for (const f of filters) {
@@ -42,6 +87,7 @@ export function useFilters(filters: FilterConfig[], queryRegistry: Record<string
           loadOpts(f, { [filterId]: value });
         }
       }
+      updateUrlFilters(next);
       return next;
     });
   }, [filters, loadOpts]);

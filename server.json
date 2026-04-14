@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mindcase-co/lens",
+  "title": "Lens",
+  "description": "Build dashboards from PostgreSQL, CSV, Excel, or Parquet using natural language. Tools: introspect_database, analyze_database, suggest_dashboard, generate_dashboard, validate_config, serve_dashboard, add_page, add_filter.",
+  "repository": {
+    "url": "https://github.com/mindcase-co/lens",
+    "source": "github"
+  },
+  "version": "0.4.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "mindcase-lens",
+      "version": "0.4.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "arguments": ["mcp"]
+    }
+  ]
+}

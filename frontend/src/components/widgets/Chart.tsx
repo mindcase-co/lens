@@ -119,7 +119,7 @@ export function Chart({ config, queryParams, queryRegistry, refreshInterval, the
                   <span className="text-[11px]">{CHART_TYPES.find(t => t.type === currentType)?.label ?? currentType}</span>
                 </button>
               } />
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="min-w-[160px]">
                 {CHART_TYPES.map(({ type, label, icon: Icon }) => (
                   <DropdownMenuItem key={type} onClick={() => setTypeOverride(type === config.chart_type ? null : type)}>
                     <Icon className="size-4" />
@@ -174,7 +174,13 @@ function buildApex(config: ChartConfig, data: Record<string, unknown>[], mode: "
   const isPie = config.chart_type === "pie" || config.chart_type === "donut";
   const base: ApexOptions = {
     chart: { background: "transparent", toolbar: { show: false }, parentHeightOffset: 0, zoom: { enabled: false }, selection: { enabled: false }, ...(isPie ? {} : { offsetY: -10 }), animations: { enabled: true, speed: 500, dynamicAnimation: { enabled: true, speed: 350 } } },
-    colors, grid: { borderColor: grid, strokeDashArray: 3, padding: isPie ? { left: 0, right: 0, bottom: 0, top: 0 } : { left: 4, right: 4, bottom: -10, top: -15 } }, tooltip: { theme: mode },
+    colors, grid: { borderColor: grid, strokeDashArray: 3, padding: isPie ? { left: 0, right: 0, bottom: 0, top: 0 } : { left: 4, right: 4, bottom: -10, top: -15 } },
+    tooltip: {
+      theme: mode,
+      cssClass: "lens-tooltip",
+      style: { fontSize: "12px" },
+      y: { formatter: (val: number) => val != null ? val.toLocaleString() : "" },
+    },
     legend: { show: config.legend !== "hidden", position: (config.legend === "hidden" ? "top" : config.legend ?? "top") as any, labels: { colors: fg }, ...(isPie ? {} : { offsetY: -5 }) },
     dataLabels: { enabled: config.data_labels ?? false }, theme: { mode: isDark ? "dark" : "light" },
   };
@@ -193,7 +199,7 @@ function buildApex(config: ChartConfig, data: Record<string, unknown>[], mode: "
   }
 
   if (config.chart_type === "combo" && config.series) {
-    const series = config.series.map(s => ({ name: s.column, type: s.as, data: data.map(r => Number(r[s.column]) || 0) }));
+    const series = config.series.map(s => ({ name: s.name, type: s.as, data: data.map(r => Number(r[s.name]) || 0) }));
     const hasRight = config.series.some(s => s.axis === "right");
     return {
       options: { ...base, xaxis: { categories, labels: { style: { colors: fg } } },
@@ -245,7 +251,7 @@ function buildApex(config: ChartConfig, data: Record<string, unknown>[], mode: "
       ...(config.y_label ? { title: { text: config.y_label, style: { color: fg } } } : {}),
     },
     stroke: { curve: "smooth", width: apexType === "line" || apexType === "area" ? 3 : 0 },
-    fill: { opacity: apexType === "area" ? 0.3 : 1 },
+    fill: { type: apexType === "area" ? "gradient" : "solid", opacity: apexType === "area" ? 0.3 : 1 },
   };
 
   if (config.reference_line) {

@@ -146,3 +146,47 @@
     color: var(--primary-foreground);
   }
 }
+
+/* ApexCharts tooltip override */
+.lens-tooltip {
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+  padding: 0 !important;
+  font-family: var(--font-sans) !important;
+}
+.lens-tooltip .apexcharts-tooltip-title {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--muted-foreground) !important;
+  margin: 0 !important;
+}
+.lens-tooltip .apexcharts-tooltip-series-group {
+  padding: 4px 10px !important;
+}
+.lens-tooltip .apexcharts-tooltip-text-y-label {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: var(--muted-foreground) !important;
+}
+.lens-tooltip .apexcharts-tooltip-text-y-value {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+}
+.lens-tooltip .apexcharts-tooltip-marker {
+  width: 8px !important;
+  height: 8px !important;
+  margin-right: 6px !important;
+}
+/* Pie/donut tooltip */
+.lens-tooltip.apexcharts-theme-light,
+.lens-tooltip.apexcharts-theme-dark {
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+}

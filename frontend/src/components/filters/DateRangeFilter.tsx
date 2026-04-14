@@ -66,20 +66,18 @@ export function DateRangeFilter({ config, value, onChange }: {
   };
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
-      <Popover>
-        <PopoverTrigger render={
-          <Button variant="outline" className="justify-start px-2.5 h-9 font-normal text-sm">
-            <CalendarIcon className="size-4 text-muted-foreground" />
-            {date?.from ? (
-              date.to ? (
-                <span>{format(date.from, "LLL dd, y")} – {format(date.to, "LLL dd, y")}</span>
-              ) : (
-                <span>{format(date.from, "LLL dd, y")}</span>
-              )
+    <Popover>
+      <PopoverTrigger render={
+        <Button variant="outline" className="justify-start px-2.5 h-8 w-[150px] font-normal text-xs truncate">
+          <CalendarIcon className="size-3 mr-1.5 text-muted-foreground shrink-0" />
+          {date?.from ? (
+            date.to ? (
+              <span className="truncate">{format(date.from, "MMM d")} – {format(date.to, "MMM d, yy")}</span>
             ) : (
-              <span className="text-muted-foreground">Pick a date</span>
+              <span className="truncate">{format(date.from, "MMM d, yyyy")}</span>
+            )
+          ) : (
+            <span className="text-muted-foreground">{config.label}</span>
             )}
           </Button>
         } />
@@ -100,7 +98,6 @@ export function DateRangeFilter({ config, value, onChange }: {
             numberOfMonths={2}
           />
         </PopoverContent>
-      </Popover>
-    </div>
+    </Popover>
   );
 }

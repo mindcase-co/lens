@@ -16,9 +16,6 @@ export function TextFilter({ config, value, onChange }: {
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
-      <Input type="text" value={local} onChange={handle} placeholder={config.placeholder ?? "Search..."} className="min-w-[160px] h-9 text-sm" />
-    </div>
+    <Input type="text" value={local} onChange={handle} placeholder={config.placeholder ?? config.label} className="h-8 w-[150px] text-xs" />
   );
 }

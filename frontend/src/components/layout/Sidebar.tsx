@@ -95,7 +95,7 @@ export function AppSidebar({ config, pages, activePageId, activeTab, onPageChang
         {!collapsed && (() => {
           const logo = themeMode === "dark" && config?.logo_dark ? config.logo_dark : config?.logo;
           return logo
-            ? <img src={logo} alt="Logo" className="h-5" />
+            ? <img src={logo} alt="Logo" className="h-8" />
             : <span className="text-sm font-semibold text-foreground truncate">{config?.title ?? "Dashboard"}</span>;
         })()}
         <button onClick={onToggleCollapse}

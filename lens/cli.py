@@ -51,5 +51,18 @@ def validate(config_path: str) -> None:
         raise SystemExit(1)
 
 
+@main.command("mcp")
+def mcp_command() -> None:
+    """Start the Lens MCP server for AI-powered dashboard generation.
+
+    Add to Claude Code:
+        claude mcp add lens -- lens mcp
+
+    Then ask Claude to build a dashboard from your database.
+    """
+    from lens.mcp.server import mcp as mcp_server
+    mcp_server.run()
+
+
 if __name__ == "__main__":
     main()

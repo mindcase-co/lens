@@ -268,9 +268,15 @@ export const chartPalettes: Record<string, ChartPalette> = {
   },
   vibrant: {
     label: "Vibrant",
-    colors: ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#3B82F6"],
-    light: { "chart-1": "oklch(0.585 0.233 277.117)", "chart-2": "oklch(0.696 0.17 162.48)", "chart-3": "oklch(0.795 0.184 86.047)", "chart-4": "oklch(0.577 0.245 27.325)", "chart-5": "oklch(0.623 0.214 259.815)" },
-    dark: { "chart-1": "oklch(0.627 0.265 303.9)", "chart-2": "oklch(0.696 0.17 162.48)", "chart-3": "oklch(0.795 0.184 86.047)", "chart-4": "oklch(0.704 0.191 22.216)", "chart-5": "oklch(0.623 0.214 259.815)" },
+    colors: ["#8B5CF6", "#EC4899", "#10B981", "#F59E0B", "#3B82F6"],
+    light: { "chart-1": "oklch(0.541 0.281 293.009)", "chart-2": "oklch(0.656 0.241 354.308)", "chart-3": "oklch(0.696 0.17 162.48)", "chart-4": "oklch(0.795 0.184 86.047)", "chart-5": "oklch(0.623 0.214 259.815)" },
+    dark: { "chart-1": "oklch(0.627 0.265 303.9)", "chart-2": "oklch(0.656 0.241 354.308)", "chart-3": "oklch(0.696 0.17 162.48)", "chart-4": "oklch(0.795 0.184 86.047)", "chart-5": "oklch(0.623 0.214 259.815)" },
+  },
+  slate: {
+    label: "Slate",
+    colors: ["#475569", "#64748B", "#94A3B8", "#334155", "#1E293B"],
+    light: { "chart-1": "oklch(0.446 0.043 257.281)", "chart-2": "oklch(0.554 0.046 257.417)", "chart-3": "oklch(0.704 0.04 256.788)", "chart-4": "oklch(0.334 0.04 257.281)", "chart-5": "oklch(0.208 0.042 265.755)" },
+    dark: { "chart-1": "oklch(0.704 0.04 256.788)", "chart-2": "oklch(0.554 0.046 257.417)", "chart-3": "oklch(0.446 0.043 257.281)", "chart-4": "oklch(0.334 0.04 257.281)", "chart-5": "oklch(0.208 0.042 265.755)" },
   },
   ocean: {
     label: "Ocean",
@@ -322,12 +328,12 @@ export interface BundledTheme {
 }
 
 export const bundledThemes: Record<string, BundledTheme> = {
-  neutral: {
-    label: "Neutral",
-    base: "neutral",
+  slate: {
+    label: "Slate",
+    base: "slate",
     accent: "default",
-    chart: "default",
-    preview: { bg: "#FAFAFA", accent: "#737373", charts: ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#3B82F6"] },
+    chart: "slate",
+    preview: { bg: "#F8FAFC", accent: "#64748B", charts: ["#475569", "#64748B", "#94A3B8", "#334155", "#1E293B"] },
   },
   ocean: {
     label: "Ocean",
@@ -348,7 +354,7 @@ export const bundledThemes: Record<string, BundledTheme> = {
     base: "zinc",
     accent: "violet",
     chart: "vibrant",
-    preview: { bg: "#FAFAFA", accent: "#8B5CF6", charts: ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#3B82F6"] },
+    preview: { bg: "#FAFAFA", accent: "#8B5CF6", charts: ["#8B5CF6", "#EC4899", "#10B981", "#F59E0B", "#3B82F6"] },
   },
 };
 
@@ -365,10 +371,10 @@ export interface ThemeSettings {
 }
 
 export const defaultThemeSettings: ThemeSettings = {
-  theme: "neutral",
-  base_color: "neutral",
+  theme: "slate",
+  base_color: "slate",
   accent_color: "default",
-  chart_palette: "default",
+  chart_palette: "slate",
   font_family: "system",
   radius: 0.625,
   mode: "system",

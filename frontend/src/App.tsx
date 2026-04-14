@@ -1,8 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Sun, Moon, RefreshCw, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { readUrlState, updateUrlPage } from "@/hooks/useUrlState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConfig } from "@/hooks/useConfig";
 import { ThemeCustomizerContext, useThemeCustomizerProvider } from "@/hooks/useThemeCustomizer";
@@ -15,17 +16,23 @@ export default function App() {
   const themeCtx = useThemeCustomizerProvider();
   const { mode, toggleMode } = themeCtx;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(config?.sidebar?.default_collapsed ?? false);
-  const [activePageId, setActivePageId] = useState("");
-  const [activeTab, setActiveTab] = useState("");
+  const [activePageId, setActivePageId] = useState(() => readUrlState().page ?? "");
+  const [activeTab, setActiveTab] = useState(() => readUrlState().tab ?? "");
 
   if (config && !activePageId) {
-    const def = config.pages.find(p => p.default) ?? config.pages[0];
+    const urlState = readUrlState();
+    const def = (urlState.page && config.pages.find(p => p.id === urlState.page)) ?? config.pages.find(p => p.default) ?? config.pages[0];
     if (def) {
       setActivePageId(def.id);
-      const defTab = def.tabs?.find(t => t.default)?.name ?? def.tabs?.[0]?.name ?? "";
+      const defTab = urlState.tab ?? def.tabs?.find(t => t.default)?.name ?? def.tabs?.[0]?.name ?? "";
       setActiveTab(defTab);
     }
   }
+
+  // Sync page/tab to URL
+  useEffect(() => {
+    if (activePageId) updateUrlPage(activePageId, activeTab);
+  }, [activePageId, activeTab]);
 
   const handlePageChange = useCallback((pageId: string) => {
     setActivePageId(pageId);

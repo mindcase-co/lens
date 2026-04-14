@@ -155,7 +155,7 @@ export interface ChartConfig {
   sort?: "value_asc" | "value_desc" | "none";
   limit?: number;
   reference_line?: { value: number; label?: string };
-  series?: { column: string; as: "bar" | "line"; axis?: "left" | "right" }[];
+  series?: { name: string; as: "bar" | "line"; axis?: "left" | "right" }[];
 }
 
 export interface TableColumnConfig {

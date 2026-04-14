@@ -12,7 +12,7 @@ export function FilterBar({ filters, values, options, loadingOptions, onValueCha
 }) {
   if (!filters?.length) return null;
   return (
-    <div className="flex flex-wrap items-center justify-end gap-3">
+    <div className="flex flex-wrap items-center justify-end gap-2">
         {filters.map(f => {
           const v = values[f.id], opts = options[f.id] ?? f.options ?? [], loading = loadingOptions[f.id] ?? false;
           switch (f.type) {
